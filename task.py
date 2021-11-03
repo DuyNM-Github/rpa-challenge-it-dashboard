@@ -160,15 +160,17 @@ def get_pdfs_from_links():
     thread1 = threading.Thread(target=get_pdf, name="Download Thread")
     thread2 = threading.Thread(target=move_pdf_to_output, name="Move file thread")
     thread1.start()
+    print("Started download thread")
     thread2.start()
+    print("Started move file thread")
     thread2.join()
 
 
 def get_pdf():
     for file, link in list_of_link.items():
         browser.go_to(link)
+        file_downloaded = False
         try:
-            file_downloaded = False
             browser.wait_until_element_is_visible('link:Download Business Case PDF', 10)
             browser.click_link("Download Business Case PDF")
             while file_downloaded is not True:
@@ -176,7 +178,6 @@ def get_pdf():
                     file_downloaded = True
         except Exception:
             print('Cannot locate the download button for {file}'.format(file=file))
-            browser.reload_page()
 
 
 def move_pdf_to_output():
@@ -187,8 +188,10 @@ def move_pdf_to_output():
         while move_success is False:
             try:
                 shutil.move(source, destination)
-                move_success = True
+                if file_sys.does_file_exist("./output/" + file + ".pdf") is True:
+                    move_success = True
             except FileNotFoundError as fe:
+                print("File not found retrying")
                 time.sleep(3)
 
 
