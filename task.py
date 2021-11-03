@@ -17,7 +17,6 @@ file_sys = FileSystem()
 list_of_agency = []
 list_of_link = {}
 tableData = []
-default_download = str(Path.home()) + "/Downloads/"
 
 
 # -
@@ -184,15 +183,8 @@ def move_pdf_to_output():
     for file in list_of_link.keys():
         source = default_download + file + ".pdf"
         destination = "./output/" + file + ".pdf"
-        move_success = False
-        while move_success is False:
-            try:
-                shutil.move(source, destination)
-                if file_sys.does_file_exist("./output/" + file + ".pdf") is True:
-                    move_success = True
-            except FileNotFoundError as fe:
-                print("File not found retrying")
-                time.sleep(3)
+        while file_sys.does_file_exist("./output/" + file + ".pdf") is False:
+            shutil.move(source, destination)
 
 
 def wrap_and_clean_up():
