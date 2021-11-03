@@ -17,6 +17,7 @@ file_sys = FileSystem()
 list_of_agency = []
 list_of_link = {}
 tableData = []
+default_download = str(Path.home()) + "/Download/"
 
 
 # -
