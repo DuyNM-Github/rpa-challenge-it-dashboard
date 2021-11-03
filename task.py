@@ -172,7 +172,7 @@ def get_pdf():
             browser.wait_until_element_is_visible('link:Download Business Case PDF', 10)
             browser.click_link("Download Business Case PDF")
             while file_downloaded is not True:
-                if file_sys.does_file_exist("./output/"+file+".pdf") is True:
+                if file_sys.does_file_exist(default_download + file + ".pdf") is True:
                     file_downloaded = True
         except Exception:
             print('Cannot locate the download button for {file}'.format(file=file))
