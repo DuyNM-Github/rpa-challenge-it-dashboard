@@ -164,19 +164,19 @@ def get_pdfs_from_links():
         source = default_download + file + ".pdf"
         destination = "./output/" + file + ".pdf"
         while file_sys.does_file_exist(destination) is False:
-    
             if file_sys.get_file_extension(source) == ".pdf":
                 try:
                     shutil.move(source, destination)
                     file_moved += 1
+                    break
                 except Exception as e:
-                    print(str(e))
+                    pass
 
 
 def wrap_and_clean_up():
+    browser.close_all_browsers()
     if file_moved == len(list_of_link):
-        print("Successfully moved " + file_moved + " files to output")
-        browser.close_all_browsers()
+        print("Successfully moved " + str(file_moved) + " files to output")
 
 
 if __name__ == "__main__":
