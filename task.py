@@ -5,7 +5,6 @@ from RPA.FileSystem import FileSystem
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from pathlib import Path
-import threading
 import time
 import shutil
 
@@ -17,7 +16,7 @@ file_sys = FileSystem()
 list_of_agency = []
 list_of_link = {}
 tableData = []
-default_download = str(Path.home()) + "/Download/"
+default_download = str(Path.home()) + "/Downloads/"
 
 
 # -
@@ -93,29 +92,23 @@ def scrape_table_data():
     time.sleep(10)
     browser.find_element('xpath://*[@id="investments-table-object_first"]').click()
     while next_page == -1:
+        time.sleep(1)
         tableElem = browser.find_elements(
             'xpath://*[@id="investments-table-object"]/tbody/tr/td'
         )
-        time.sleep(0.5)
+        if len(table_body.find_elements(By.TAG_NAME, "a")) > 0:
+            no_links = False
+        else:
+            no_links = True
         for elem in tableElem:
-            try:
-                if elem.find_element(By.TAG_NAME, 'a') is not None:
-                    list_of_link[elem.text] =\
-                        elem.find_element(By.TAG_NAME, 'a').get_attribute('href')
-            except Exception:
-                pass
-            retry = 0
-            while retry < 5:
+            if no_links is False:
                 try:
-                    tableDataRaw.append(elem.text)
-                    break
+                    if elem.find_element(By.TAG_NAME, 'a') is not None:
+                        list_of_link[elem.text] =\
+                            elem.find_element(By.TAG_NAME, 'a').get_attribute('href')
                 except Exception:
-                    if retry == 5:
-                        print("Failed fetching element after 5 retries")
-                    else:
-                        print("Problem fetching element. Retrying ...")
-                        time.sleep(0.25)
-                        retry += 1
+                    pass
+            tableDataRaw.append(elem.text)
         next_page = browser.find_element(
             'xpath://*[@id="investments-table-object_next"]'
         ).get_attribute("class").find("disabled")
@@ -156,40 +149,34 @@ def write_data_to_excel():
 
 
 def get_pdfs_from_links():
-    browser.set_download_directory(directory="./output", download_pdf=True)
-    thread1 = threading.Thread(target=get_pdf, name="Download Thread")
-    thread2 = threading.Thread(target=move_pdf_to_output, name="Move file thread")
-    thread1.start()
-    print("Started download thread")
-    thread2.start()
-    print("Started move file thread")
-    thread2.join()
-
-
-def get_pdf():
+    global file_moved
+    print("List of links have: " + str(len(list_of_link)) + " elements")
+    file_moved = 0
     for file, link in list_of_link.items():
         browser.go_to(link)
         file_downloaded = False
         try:
             browser.wait_until_element_is_visible('link:Download Business Case PDF', 10)
             browser.click_link("Download Business Case PDF")
-            while file_downloaded is not True:
-                if file_sys.does_file_exist(default_download + file + ".pdf") is True:
-                    file_downloaded = True
         except Exception:
             print('Cannot locate the download button for {file}'.format(file=file))
-
-
-def move_pdf_to_output():
-    for file in list_of_link.keys():
+        time.sleep(5)
         source = default_download + file + ".pdf"
         destination = "./output/" + file + ".pdf"
-        while file_sys.does_file_exist("./output/" + file + ".pdf") is False:
-            shutil.move(source, destination)
+        while file_sys.does_file_exist(destination) is False:
+    
+            if file_sys.get_file_extension(source) == ".pdf":
+                try:
+                    shutil.move(source, destination)
+                    file_moved += 1
+                except Exception as e:
+                    print(str(e))
 
 
 def wrap_and_clean_up():
-    browser.close_all_browsers()
+    if file_moved == len(list_of_link):
+        print("Successfully moved " + file_moved + " files to output")
+        browser.close_all_browsers()
 
 
 if __name__ == "__main__":
